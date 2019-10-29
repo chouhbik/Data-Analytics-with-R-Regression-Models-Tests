@@ -1,0 +1,295 @@
+---
+title: "4 - Categorical Predictors"
+author: "Kamal Chouhbi"
+output:
+  html_notebook:
+    theme: simplex
+    toc: yes
+    toc_depth: 4
+---
+
+### **Categorical Predictors**
+
+A variable is **categorical**, or **qualitative** if it takes on values from a finite set of categories or classes. The values might be encoded using numerical labels, but they do not typically have any numerical or quantitative significance. In R terminology, a categorical variable is represented by a variable with the **factor** data type. The possible values that a factor can assume are referred to as its **labels**. 
+
+Simple linear regression assumes that the response variable is a quantitative variable that lies on a continuous scale. However, it makes no such assumptions about the predictors. We can use categorical variables in our predictors, as long as we are careful to encode them properly. 
+
+### **Encoding Binary Categorical Variables**
+
+Assume that we have are constructing a regression model that includes a categorical predictor $Z$. Suppose that $Z$ has two possible values, $A$ and $B$. To use this predictor in a model, we must numerically encode the information it contains. We do this by first selecting one of the two values to be the **base value**. This choice is arbitrary, and has no substantive effect on the final model (but will effect how the model is represented). 
+
+Assume that we have selected $A$ to be our base value. Then we will create new **dummy variable** $Z_B$ defined as follows: 
+
+$$Z_B = 0 \text{ if }  Z = A$$
+
+$$Z_B = 1 \text{ if } Z = B$$
+
+In a sense, the dummy variable $X_B$ is indicates whether or not an observation falls in a level other than the base level. 
+
+We can use $Z_B$ in a regression model. Suppose that we have two other predictors, $X^{(1)}$ and $X^{(2)}$, and that our fitted model has the form: 
+
+$$\hat Y = \hat{\beta_0} + \hat{\beta_1} X^{(1)} + \hat{\beta_2} X^{(2)} + \hat{\beta_3} Z_B$$
+
+In a sense, this creates two models. Observations with $Z = A$ would use the model:
+
+$$\hat Y = \hat{\beta_0} + \hat{\beta_1} X^{(1)} + \hat{\beta_2} X^{(2)}$$
+
+while observations with $Z=B$ would use the model:
+$$\hat Y = \hat{\beta_0} + \hat{\beta_1} X^{(1)} + \hat{\beta_2} X^{(2)} + \hat{\beta_3}$$
+
+The parameter estimate $\hat{\beta_3}$ is an estimate of the average difference between $Y$ values for two observations that have different values of $Z$, but the same values for the other predictors. 
+
+
+### **Encoding Non-Binary Categorical Variables**
+
+It is quite common to have categorical variables with more than two categories. Encoding a non-binary categorical variable requires a bit more work than a binary categorical variable. We will still select a base level for the variable, and we then introduce dummy variables for each categorical other than the base level. A particular dummy variable is equal to one for observations that fall in the related category, and is zero otherwise. 
+
+For example, assume that we have a categorical variable $Z$ with four levels: $A$, $B$, $C$, and $D$. We will select $A$ to be the base level, and will introduce dummy variables $Z_B$, $Z_C$, and $Z_D$. The following table shows the value of these three dummy variables for each possible value of $Z$. 
+
+<center>
+<table width=400>
+<tr>
+<td> $Z$ </td><td> $Z_B$ </td><td> $Z_C$ </td><td> $Z_D$ </td>
+</tr>
+<tr>
+<td> A </td><td> 0 </td><td> 0 </td><td> 0 </td>
+</tr>
+<tr>
+<td> B </td><td> 1 </td><td> 0 </td><td> 0 </td>
+</tr>
+<tr>
+<td> C </td><td> 0 </td><td> 1 </td><td> 0 </td>
+</tr>
+<tr>
+<td> D </td><td> 0 </td><td> 0 </td><td> 1 </td>
+</tr>
+</table>
+</center>
+
+When using these dummary variables in a regression model, their fitted coefficients will be estimates of the average difference between observations within the relevant category and the base category, assume that all other predictors are equal. 
+
+### **Interaction Terms**
+
+An **interaction** term in a regression model is a predictor that is created as a product of two other predictors. Interaction terms are often important to consider when dealing with categorical predictors, as the value of a categorical variable $Z$ might have an impact on the effect of a different predictor variable $X$ within the model. 
+
+When considering interactions between a quantitative predictor $X$ and a categorical predictor $Z$, we will have to include one interaction term for every dummy variable created for $Z$. 
+
+We will see how to implement interaction terms in R later in this notebook. 
+
+
+### **Example: Salary Survey**
+
+In this example, we will study the effects that experience, education, and being in a management position have on the salary of individuals at a specific company. The data used in this study has been simulated.
+
+Our dataset consists of 198 observations with 4 features. The features in the dataset are:
+
+* **Exp** - The number of years of experience for the employee, rounded to the nearest year.
+* **Mgmt** - A binary variable indicating whether or not the employee is in a management position. 0 indicates a non-management position, while 1 indicates a management position.
+* **Educ** - Indicates the highest level of educational attainment for the employee. A code of 0 refers to high school, 1 refers to a Bachelor’s degree, and 2 refers to a Master’s degree or higher.
+* **Salary** - The employee’s annual salary, in dollars.
+
+#### **Load Packages**
+
+We will begin by loading two packages that we will use for the purposes of performing graphical analysis of the data. 
+
+```{r, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+```
+
+#### **Load and Analyze the Data**
+
+The training data for this example is stored in the file `data/salaries_tr.csv`. We will load this dataset into a data frame and will then look at a summary of the data. 
+
+```{r}
+df <- read.table("data/salaries_tr.csv", header=TRUE, sep=",")
+summary(df)
+```
+
+We will use the `str()` function to determine the data types for each of the columns in the data frame. 
+
+```{r}
+str(df)
+```
+
+The variable `Educ` is stored as a factor, which is correct. However, the base level for `Educ` is listed as `B`. We will relevel this factor variable so that `HS` is the base level. Additionally, we notice that `Mgmt` is currently stored as an integer. We will convert this to a factor. 
+
+```{r}
+df$Educ <- factor(df$Educ, levels=c("HS", "B", "M"))
+df$Mgmt <- factor(df$Mgmt, levels=c(0, 1))
+str(df)
+```
+
+Let's take another look at the summary of the data. 
+
+```{r}
+summary(df)
+```
+
+#### **Exploratory Plots**
+
+We will generate plots to explore the distribution of the `Educ` and `Mgmt` variables. 
+
+```{r, fig.height=3, fig.width=8}
+p1 <- ggplot(df, aes(x=Educ, fill=Educ)) + geom_bar()  
+p2 <- ggplot(df, aes(x=Mgmt, fill=Mgmt)) + geom_bar()  
+p3 <- ggplot(df, aes(x=Educ, fill=Mgmt)) + geom_bar(position="fill") +
+    ylab("Proportion")
+
+grid.arrange(p1, p2, p3, ncol=3)
+```
+
+We will now create boxplots to explore the replationship between the each of the qualitative variables and `Salary`. 
+
+```{r, fig.height=3, fig.width=8}
+p1 <- ggplot(df, aes(x=Educ, y=Salary, fill=Educ)) + geom_boxplot()
+p2 <- ggplot(df, aes(x=Mgmt, y=Salary, fill=Mgmt)) + geom_boxplot()
+grid.arrange(p1, p2, ncol=2)
+```
+
+We can use a scatterplot to visualize the relationship between `Salary` and `Exp`. 
+
+```{r}
+ggplot(df, aes(x=Exp, y=Salary, color=Educ, shape=Mgmt)) + 
+  geom_point(size=2, alpha=0.8) 
+```
+
+We can use faceting to create seperate scatter plots for each of the six groups defined by the values of `Educ` and `Mgmt`. 
+
+```{r}
+ggplot(df, aes(x=Exp, y=Salary, color=Educ, shape=Mgmt)) + 
+  geom_point(size=2, alpha=0.8) + 
+  geom_smooth(method='lm') + 
+  facet_grid(Educ ~ Mgmt)
+```
+
+
+#### **Create Full Model, without Interactions**
+
+We can create a regession model using the same syntax as we would for any other multiple regression problem. R will take care of creating dummy variables for any predictors that are stored as factors. 
+
+```{r}
+mod1 <- lm(Salary ~ Exp + Educ + Mgmt, df)
+summary(mod1)
+```
+
+#### **Consider Models with Interaction Terms**
+
+We will now explore the possibility of there being relevant interaction terms in the model. We begin by creating a model that includes interactions between `Exp` and `Mgmt`. Our fitted model will have the following form:
+
+$$\hat{Salary} = \hat{\beta_0} + \hat{\beta_1}\cdot Educ_B + \hat{\beta_2}\cdot Educ_M + \hat{\beta_3}\cdot Mgmt_1 +
+\hat{\beta_4}\cdot Exp + \hat{\beta_5}\cdot Exp \cdot Mgmt_1$$
+
+```{r}
+mod2 <- lm(Salary ~ Educ + Exp*Mgmt, df)
+summary(mod2)
+```
+
+Let's now include interactions between `Exp` and `Educ`, as well as `Exp` and `Mgmt`. Our model will have the form:
+
+$$\hat{Salary} = \hat{\beta_0} + \hat{\beta_1}\cdot Educ_B + \hat{\beta_2}\cdot Educ_M + \hat{\beta_3}\cdot Mgmt_1+ \hat{\beta_4}\cdot Exp$$
+$$  + \hat{\beta_5}\cdot Exp \cdot Mgmt_1 + \hat{\beta_6}\cdot Exp \cdot Educ_B + \hat{\beta_7}\cdot Exp \cdot Educ_M$$
+
+```{r}
+mod3 <- lm(Salary ~ Exp*Educ + Exp*Mgmt, df)
+summary(mod3)
+```
+
+Finally, let consider a model including interactions between only `Exp` and `Educ`. This model will have the form:
+
+$$\hat{Salary} = \hat{\beta_0} + \hat{\beta_1}\cdot Educ_B + \hat{\beta_2}\cdot Educ_M + \hat{\beta_3}\cdot Mgmt_1 +$$
+$$\hat{\beta_4}\cdot Exp + \hat{\beta_5}\cdot Exp \cdot Educ_B + \hat{\beta_6}\cdot Exp \cdot Educ_M$$
+
+
+```{r}
+mod4 <- lm(Salary ~ Mgmt + Exp*Educ, df)
+summary(mod4)
+```
+
+
+### **Residual Analysis**
+
+Of the models considered, Model 2 appears to be the best. We will now perform a residual analysis for this model. 
+
+```{r}
+res <- mod2$residuals
+
+plot(res ~ mod2$fitted.values, pch=21, col="black", bg="salmon",
+     xlab="Fitted Value", ylab="Residuals", main="Residual Plot")
+
+abline(h=0, col="darkred", lwd=2)
+```
+
+We will apply a Shapiro-Wilks test for normality of the residuals. 
+
+```{r}
+shapiro.test(res)
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(res, col='orchid', breaks=10)
+qqnorm(res)
+qqline(res)
+par(mfrow=c(1,1))
+```
+
+
+### **Comparing Models with a Validation Set**
+
+Assume that we have access to a validation set to use when selecting between our models. We can compare the different models by calculating $r^2$ scores for each of the models. Note that selecting the model with the highest $r^2$ score is equivalent to selecting the model with the lowest $SSE$ score. 
+
+We will begin by loading and processing the validation set. 
+
+```{r}
+vdf <- read.table("data/salaries_va.csv", header=TRUE, sep=",")
+vdf$Educ <- factor(vdf$Educ, levels=c("HS", "B", "M"))
+vdf$Mgmt <- factor(vdf$Mgmt, levels=c(0, 1))
+summary(vdf)
+```
+
+In the next cell, we will use each of the models to generate predictions for the validation set. We will then calculate $SSE$ and $r^2$ for each of the models. 
+
+```{r}
+val_pred_1 <- predict(mod1, vdf)
+val_pred_2 <- predict(mod2, vdf)
+val_pred_3 <- predict(mod3, vdf)
+val_pred_4 <- predict(mod4, vdf)
+
+SSE_1 <- sum((vdf$Salary - val_pred_1)^2)
+SSE_2 <- sum((vdf$Salary - val_pred_2)^2)
+SSE_3 <- sum((vdf$Salary - val_pred_3)^2)
+SSE_4 <- sum((vdf$Salary - val_pred_4)^2)
+
+SST <- var(vdf$Salary) * (nrow(vdf) - 1)
+
+r2_1 <- 1 - SSE_1 / SST
+r2_2 <- 1 - SSE_2 / SST
+r2_3 <- 1 - SSE_3 / SST
+r2_4 <- 1 - SSE_4 / SST
+
+round(c(r2_1, r2_2, r2_3, r2_4),3)
+```
+
+Model 2 has the best performance on the validation set. 
+
+### **Generating Predictions**
+
+We will finish this lesson by using Model 2 to generate predictions for individuals with the following characteristics:
+
+1. `Exp = 10, Educ = 'HS', Mgmt = '0'` 
+2. `Exp = 5,  Educ = 'B',  Mgmt = '0'` 
+3. `Exp = 12, Educ = 'B',  Mgmt = '1'` 
+4. `Exp = 8,  Educ = 'M',  Mgmt = '1'` 
+
+```{r}
+nd <- data.frame(
+    Exp = c(10, 5, 12, 8), 
+    Educ = c('HS', 'B', 'B', 'M'),
+    Mgmt = c('0', '0', '1', '1')
+)
+ 
+predict(mod2, newdata = nd, interval = "prediction", level = 0.95)
+```
+
+

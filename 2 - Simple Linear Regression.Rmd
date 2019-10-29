@@ -1,0 +1,371 @@
+---
+title: "2 - Simple Linear Regression"
+author: "Kamal Chouhbi"
+output:
+  html_notebook:
+    theme: simplex
+    toc: true
+    toc_depth: 4
+---
+
+### **Introduction to Simple Linear Regression**
+
+Simple linear regression is a supervised learning method that can be used to model a single quantitative response $Y$ as a function of a single quantitative predictor $X$. 
+
+#### **Hypothetical and Fitted Models**
+
+When performing simple linear regression to describe a relationship between two variables $X$ and $Y$, we begin by assuming that the relationship is determined by an unknown **hypothetical model** (or **population model**) of the form: 
+
+$$Y = \beta_0 + \beta_1 X + \varepsilon$$
+
+
+We collect a sample of paired observations $(x_i, y_i)$ to use as a **training set**. We use the training set to create a **fitted model**. The fitted model is an approximation of the hypothetical model, and can be written in either of the following (equivalent) forms:
+
+
+$$\hat Y = \hat \beta_0 + \hat \beta_1 X$$
+$$Y = \hat \beta_0 + \hat \beta_1 X + \hat \varepsilon$$
+
+Given a paired observation $\left(x_i, y_i \right)$, the **fitted value of y given $x_i$** is given by: 
+
+
+$$\hat y_i = \hat\beta_0 + \hat\beta_1 x_i$$
+
+
+The **residual** associated with the observation is given by:
+
+<center>
+$$\hat \varepsilon_i = y_i - \hat y_i$$
+</center>
+
+```{r, echo=FALSE}
+set.seed(3)
+x <- runif(n=10, 5, 15)
+y <- 4 + 0.3*x + rnorm(10, 0, 0.2)
+model <- lm(y~x)
+plot(y ~ x, pch=21, bg='orange', col='black', cex=1.5)
+abline(4, 0.3, col='darkred', lty=2, lwd=2)
+abline(model$coefficients, col='blue', lwd=2)
+points(y ~ x, pch=21, bg='orange', col='black', cex=1.5)
+text(7, 6.5, 'Hypothetical Model', col='darkred')
+text(9.5, 6.5, 'Fitted Model', col='blue')
+```
+
+
+#### **Least Squares Regression**
+
+As discussed in previous lessons, we will select our fitted model $\hat Y = \hat \beta_0 + \hat \beta_1 X$ by choosing parameter estimates $\hat\beta_0$ and $\hat\beta_1$ so that the following quantities are minimized on the training set:
+
+
+$$SSE = \sum\limits_{i=1}^n \hat \varepsilon_i^2 \hspace{2 em} MSE = \frac{1}{n}\sum\limits_{i=1}^n \hat \varepsilon_i^2$$
+At present, we will work with $SSE$. To emphasize that $SSE$ is a function of the proposed parameter estimates $\hat\beta_0$ and $\hat\beta_1$, we sometimes write:
+
+$$SSE\left ( \hat\beta_0, \hat\beta_1 \right) = \sum\limits_{i=1}^n \hat \varepsilon_i^2 = \sum\limits_{i=1}^n \left( y_i - \hat\beta_0 - \hat\beta_1 x_i \right) ^2$$
+
+```{r, echo=FALSE, fig.height=3, fig.width=8}
+set.seed(3)
+x <- runif(n=10, 5, 15)
+y <- 4 + 0.3*x + rnorm(10, 0, 0.2)
+model <- lm(y~x)
+
+pred1 <- 5 + 0.2*x
+pred2 <- 3 + 0.4*x
+res1 <- y - pred1
+res2 <- y - pred2
+res3 <- model$residuals
+
+sse1 <- sum(res1^2)
+sse2 <- sum(res2^2)
+sse3 <- sum(res3^2)
+
+
+par(mfrow=c(1,3))
+
+plot(y ~ x, pch=21, bg='orange', col='black', cex=1.5, main=paste("Model 1: SSE = ", round(sse1,3)))
+abline(5, 0.2, col='blue', lwd=2)
+segments(x, pred1, x, y, col='red', lwd=2)
+points(y ~ x, pch=21, bg='orange', col='black', cex=1.5)
+
+plot(y ~ x, pch=21, bg='orange', col='black', cex=1.5, main=paste("Model 2: SSE = ", round(sse2,3)))
+abline(3, 0.4, col='blue', lwd=2)
+segments(x, pred2, x, y, col='red', lwd=2)
+points(y ~ x, pch=21, bg='orange', col='black', cex=1.5)
+
+plot(y ~ x, pch=21, bg='orange', col='black', cex=1.5, main=paste("Fitted Model: SSE = ", round(sse3,3)))
+abline(model$coefficients, col='blue', lwd=2)
+segments(x, model$fitted.values, x, y, col='red', lwd=2)
+points(y ~ x, pch=21, bg='orange', col='black', cex=1.5)
+
+
+par(mfrow=c(1,3))
+```
+
+
+
+#### **Parameter Estimates**
+
+Through the magic of calculus, we can show that for a given training set $\left(x_i, y_i \right)$, the quantity $SSE\left ( \hat\beta_0, \hat\beta_1 \right)$ has a unique minimum which is obtained as follows:
+
+Define quantities $S_{XX}$ and $S_{XY}$ by:
+
+$$S_{XX} = \sum\limits_{i=1}^n \left(x_i - \bar x \right)^2 = \sum\limits_{i=1}^n x_i^2 - n\bar x^2$$
+
+$$S_{XY} = \sum\limits_{i=1}^n \left(x_i - \bar x \right)\left(y_i - \bar y \right) = \sum\limits_{i=1}^n x_i y_i - n\bar x \bar y$$
+
+The parameter estimates that minimize SSE on the training set are given by:
+ 
+
+$$\hat\beta_1= \frac{S_{XY}}{S_{XX}} \hspace{20px} \mathrm{and} \hspace{20px}\hat\beta_0 = \bar y - \hat\beta_1 \bar x$$
+
+The derivation of the results above are shown in the accompanying notebook titled **3.1.a - Derivation of Parameter Estimates**. 
+
+
+#### **Alternate form for $\hat\beta_1$**
+
+There are many different ways to write the formula for $\hat\beta_1$. One commonly encountered formula is $\hat\beta_1 = \frac{\mathrm{cov}[X,Y]}{s_X^2}$. This formula can be derived from our previous formula for $\hat\beta_1$ by multiplying the top and bottom of the expression by $1/(n-1)$.
+</br>
+</br>
+
+#### **R-Squared**
+
+The quantities $SSE$ and $MSE$ provide measures for the quality of a fitted model. However, these metrics are measured in the square of the units in which $Y$ is measured. This makes it difficult to use these quanties to assess the fitted model. Fortunately, there is a unitless measure, called the **R-Squared** statistic, that we can use to score our models.
+
+The **R-Squared** statistic is given by: 
+
+$$R^2 = 1 - \frac{SSE}{SST}$$
+
+Where: 
+
+$$SST = \sum\limits_{i=1}^n \left(y_i - \bar y \right)^2 $$
+
+Note that the sample variance of the response variable $Y$ is given by $s_Y^2 = SST / (n-1)$. As such, $SST$ is, in a sense, a measure of the variability of the response variable. 
+
+
+It can be shown that $R^2$ is always between 0 and 1. Furthermore, we can show that $R^2$ measures the proportion of variability in the response variable $Y$ that the fitted model is able to explain using the predictor $X$.  
+
+
+
+### **Example: Simple Linear Regression in R**
+
+In the following example, we will be interested in studying the relationship between the price and mileage of used cars. 
+
+#### **Generate Data and Calculate Descriptive Statistics**
+
+
+Assume that we gather a sample of 20 recently sold used 2016 Ford Fictus automobiles. For each vehicle, we record the sales price (in thousands of dollars) and mileage (in thousands of miles) of the vehicle. In the code chunk below, We create vectors `mileage` and `price` to store these values. 
+
+
+```{r}
+mileage <- c( 3.1,  4.1,  5.3,  7.1, 19.5, 
+             28.3, 36.8, 37.2, 42.3, 52.3, 
+             53.3, 53.4, 63.2, 68.4, 82.3, 
+             83.9, 88.4, 97.6, 99.7, 105.9)
+
+price <- c(53.7, 56.8, 58.5, 42.0, 48.9, 
+           33.2, 22.2, 32.6, 30.3, 19.8, 
+           26.1, 24.9, 18.1, 11.7, 13.3, 
+           23.4, 13.2, 13.6, 14.8, 4.6)
+
+```
+
+#### **Descriptive Statistics**
+
+Before constructing our model, let's calculate the sample mean and standard deviation for both the mileage and price of the automobiles in the sample. 
+
+```{r}
+xbar <- mean(mileage)
+sx <- sd(mileage)
+
+x_stats <- c(xbar, sx)
+names(x_stats) <- c('mean', 'stdev')
+
+ybar <- mean(price)
+sy <- sd(price)
+
+y_stats <- c(ybar, sy)
+names(y_stats) <- c('mean', 'stdev')
+
+rbind(x_stats, y_stats)
+```
+
+Notice that the the standard deviation of the price is very large with respect to its mean. This indicates that if we were to use only the sample mean price as an estimate for the price of one of these automobiles, there would be a lot of uncertainty in our estimate. 
+
+
+#### **Relationship between Price and Mileage**
+
+To study the relationship between price and mileage of this automobile model, we might create a scatterplot from the paired observations in our sample.
+
+```{r}
+plot(price ~ mileage, pch=21, bg='orange', col='black', cex=1.5,
+     xlab = 'Mileage (in 1000s of Miles)', ylab = 'Price (in 1000s of Dollars)', 
+     main = 'Relationship between Mileage and Price')
+```
+
+We see from this plot that the cars with greater mileage tend to have a lower sales price (as you might expect). In fact, it appears that the relationship between the price and mileage of the vehicles might be roughly linear. 
+
+#### **Creating the Fitted Model**
+
+We will use the `lm` function in R to find a linear model that attempts to capture the relationship between price and mileage. We will store the resulting model in a variable called `model` and will then use the `summary` function to get some information about the model. 
+
+
+```{r}
+model <- lm(price ~ mileage)
+
+summary(model)
+```
+
+There is a lot of information in this summary. We will eventually learn how to interpret all of the information presented here. For now, lets focus on one piece of information: the coefficient estimates. 
+
+The coefficient estimates are shown in the summary above, but we can access them directly as follows:
+
+```{r}
+model$coefficients
+```
+
+These are the coefficients that determine the slope and intercept of our linear model. This tells us that our model has the following form:
+
+<center>
+**Predicted Price = 50.55 - 0.4353 · Mileage**
+</center>
+
+<br>
+This relationship between price and mileage can also be represented as follows:
+
+<center>
+**Actual Price = 50.55 - 0.4353 · Mileage + Unexplained Error**
+</center>
+
+#### **Assessing the Quality of the Fit**
+
+The summary of the model also reports the value of $R^2$ under the listing "Multiple R-squared". It can also be accessed directly as follows:
+
+```{r}
+ summary(model)$r.squared
+```
+
+This means that our model is able to explain roughly 83.72% of the variability in the price of a used 2016 Ford Fictus in terms of the mileage for the vehicle. 
+
+
+#### **Plotting the Fitted Model**
+
+Let's add our regression line to the scatter plot of price and mileage. 
+
+
+```{r}
+plot(price ~ mileage, pch=21, bg='orange', col='black', cex=1.5,
+     xlab = 'Mileage (in 1000s of Miles)', ylab = 'Price (in 1000s of Dollars)', 
+     main = 'Relationship between Mileage and Price')
+abline(model$coefficients, col='cadetblue', lwd=2)
+```
+
+#### **Fitted Values**
+
+The fitted value for any particlar observation in our sample is the price that the model predicts for the car, given the mileage of that car. This is obtained by plugging the mileage into the equation:
+<center>
+**Predicted Price = 50.55 - 0.4353 · Mileage**
+</center>
+<br>
+The fitted values for the cars in our sample are stored within the `model` variable
+
+```{r}
+round(model$fitted.values,1)
+```
+
+To illustrate this idea, we will add the fitted values to our scatterplot. 
+
+```{r, echo=FALSE}
+plot(price ~ mileage, pch=21, bg='orange', col='black', cex=1.5,
+     xlab = 'Mileage (in 1000s of Miles)', ylab = 'Price (in 1000s of Dollars)', 
+     main = 'Relationship between Mileage and Price')
+
+abline(model$coefficients, col='cadetblue', lwd=2)
+
+points(mileage, model$fitted.values, pch=18, cex=1.5, col='darkgreen')
+points(price ~ mileage, pch=21, bg='orange', col='black', cex=1.5)
+
+
+```
+
+
+#### **Residuals**
+
+The residuals are the error in the predicted prices. The residual for a particular observation is given by the equation:
+<center>
+**Residal = Actual Price - Predicted Price**
+</center>
+<br>
+
+Residuals reflect the uncertainty remaining in our model. 
+
+
+```{r, echo=FALSE}
+plot(price ~ mileage, pch=21, bg='orange', col='black', cex=1.5,
+     xlab = 'Mileage (in 1000s of Miles)', ylab = 'Price (in 1000s of Dollars)', 
+     main = 'Relationship between Mileage and Price')
+
+segments(mileage, model$fitted.values, mileage, price, col='red', lwd=2)
+points(price ~ mileage, pch=21, bg='orange', col='black', cex=1.5)
+
+abline(model$coefficients, col='cadetblue', lwd=2)
+```
+
+Our model object `model` contains the residuals for the observations in our sample. 
+
+
+```{r}
+res <- model$residuals
+
+round(res,1)
+```
+
+Since the residuals represent the uncertainly in our predictions, we would like to get a sense as to how they are distributed. To that end, we generate a histogram of the residuals.
+
+
+```{r}
+hist(res, col='orchid')
+```
+
+
+It seems reasonable to assume that the residuals might be normally distributed with a mean of zero. Let's calculate their sample mean and standard deviation.
+
+
+```{r}
+res_mean <- mean(res)
+res_sd <- sd(res)
+
+res_stats <- c(res_mean, res_sd)
+names(res_stats) <- c('mean', 'stdev')
+
+round(res_stats,4)
+```
+
+#### **Using the Model to Make Predictions**
+
+Assume that we are interested in purchasing a used 2016 Ford Fictus with 45,000 miles. We would like to use our model to determine a fair price for the car. We could calulcate this by plugging 45 into the equation for our model.That gives:
+
+<center>
+**Predicted Price = 50.55 - 0.4353 · 45 = 30.96**
+</center>
+<br>
+In other words, our model predicts that such a vehicle should cost (on average) $30,960. 
+
+We can use the R function `predict` to calculate this predicted value. 
+
+```{r}
+newdata = data.frame(mileage=c(45))
+predict(model, newdata)
+```
+
+We know that the predictions made by the model are not 100% accurate. We expect there to be some error in the predictions. To better understand how much the actual price of a car with 45,000 miles might vary, we will use `predict` to create an interval that we are 95% certain contains the true price of the car. This interval is called a **prediction interval**. 
+
+```{r}
+predict(model, newdata, interval = 'prediction', level=0.95)
+```
+
+We can use the predict function to generate predictions for several new observations at once. Let's say that we would like to contruct 95% prediction intervals for the prices of 3 vehicles: one with 40,000 miles, one with 50,000 miles, and one with 70,000 miles. We can do so as follows:
+
+```{r}
+newdata = data.frame(mileage=c(40, 50, 70))
+predict(model, newdata, interval='prediction', level=0.95)
+```
+
+

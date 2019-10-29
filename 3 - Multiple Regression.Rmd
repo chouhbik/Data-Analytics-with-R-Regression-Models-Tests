@@ -1,0 +1,257 @@
+---
+title: "3 - Intro to Multiple Regression"
+author: "Kamal Chouhbi"
+output:
+  html_notebook:
+    theme: simplex
+    toc: yes
+    toc_depth: 4
+---
+
+### **Multiple Regression**
+
+In multiple linear regression, we model the response variable as a linear combination of several predictors, plus a single error term. Assume that we have a single response $Y$, and $p$ predictors $X^{(1)}, X^{(2)}, ..., X^{(p)}$. The hypothetical form for a multiple regression model would be as follows:
+
+$$Y = \beta_0 + \beta_1 X^{(1)} + \beta_2 X^{(2)} + ... + \beta_p X^{(p)} + \varepsilon$$
+
+We make the same assumptions for the error term $e$ as we did for simple linear regression. The fitted model will have the form: 
+
+$$\hat Y = \hat\beta_0 + \hat\beta_1 X^{(1)} + \hat\beta_2 X^{(2)} + ... + \hat\beta_p X^{(p)}$$
+
+### **Fitting a Multiple Regression Model**
+
+The process for fitting a multiple regression model is very similar to that of a simple linear regression model. In either case, we score potential models using SSE, and find the model that produces the lowest SSE score. In detail:
+
+1. Assume $\hat Y = b_0 + b_1 X^{(1)} + b_2 X^{(2)} + ... + b_p X^{(p)}$ is a proposed model. 
+2. For each training observation, calculate $\hat y_i = b_0 + b_1 x_i^{(1)} + b_2 x_i^{(2)} + ... + b_p x_i^{(p)}$.
+3. Let $\hat\varepsilon_i = y_i - \hat y_i$ and $SSE = \sum\limits_{i=1}^n \hat \varepsilon_i^2$. 
+4. Select coefficients $\hat\beta_0$, $\hat\beta_1$, ..., $\hat\beta_p$ that result in $SSE$ being minimized. 
+
+### **Comparison with Simple Linear Regression**
+
+We will now draw attention to several important similarities and differences between simple and multiple linear regression.
+
+
+#### **Residual Standard Error**
+
+Recall that $\sigma^2 = \mathrm{Var}[\varepsilon]$. For simple linear regression, the quantity $s^2 = \frac{SSE}{n - 2}$ provides an unbaised estimate of $\sigma^2$. For multiple regression, our unbiased estimate is given by:
+
+$$s^2 = \frac{SSE}{n-p-1}$$
+
+The square root of this quantity, $s$, is called the **residual standard error**. It approximates the standard deviation of our error term.
+
+
+#### **t-Tests**
+
+To determine which predictors are relevant within the model, we will perform a t-test of the form 
+
+$$H_0: \beta_i = 0$$
+$$H_A: \beta_i \neq 0$$ 
+
+for each coefficient estimate. To calculate the test statistic for any particular test of this form, we will have to calculate $SE \left[ \beta_i \right]$. The formulas for the standard errors in multiple regression are a bit more complicated than those for simple linear regression. We will discuss the formulas for the standard errors in a later lecture. For now, we will rely on R to calculate these quantities, and to perform the t-tests. 
+
+#### **F-Test**
+
+We need to be careful about conducting multiple t-tests when there are many predictors in a multiple regression problem. There is always a possibility that some predictors will pass their t-test by chance, and the likelihood increases with each additional predictor. 
+
+For example, assume that we have 100 predictors, none of which are relevant. If we conduct t-Tests for each of these variables using a significance level of $\alpha=0.05$, then each predictor has a 5% chance of passing the test at random. We would expect for 5 of the 100 variables to appear significant!
+
+Prior to performing the t-Tests, we should first perform the following hypothesis test, called an **F-test**, to see if there is evidence that there is **at least one** relevant variable"
+
+$$H_0 : \beta_1 = \beta_2 = ... = \beta_p = 0$$
+
+$$H_A : \text{There is at least one } \beta_i \neq 0$$
+
+
+We can test this hypothesis using the F statistic, defined by:
+
+$$F = \frac{\left(SST - SSE\right) / p}{SSE / \left(n - p - 1 \right)}$$
+Assuming the Gauss-Markov assumptions hold, this test statistic will follow and F distribution. 
+
+#### **Adjusted R-Squared Value**
+
+Note that summary output for the model states two R-squared values: "Multiple R-squared"" and "Adjusted R-squared". The first value, multiple R-squared, is the standard version of R-squared that we are used to. In particular:
+
+
+Recall that for simple linear regression, we use the R-squared value to assess the predictive quality of the fit.  
+
+$$r^2 = 1 - \frac{SSE}{SST}$$
+
+The R-squared measures the proportion of variability in the reponse that the model is able to explain by taking into account the value of the predictor. 
+
+Using R-squared to assess a multiple regression model can be problematic. It can be shown that adding additional predictors to a regression model will **always** increase the value of R-squared, even if the new predictor is in no way related to the response. 
+
+When scoring a multiple regression model, it is preferable to calculate a score called **adjusted R-squared**, which is similar to R-squared, but it applies a penalty for having many predictors in the model. The formula for adjusted R-squared is as follows:
+
+
+$$r_{adj}^2 = 1 - \frac{s^2}{s_Y^2} = 1 - \frac{\frac{1}{n-p-1}SSE}{\frac{1}{n-1}SST} = 1 - \frac{(n-1) SSE}{(n-p-1)SST} = r^2 - (1-r^2) \frac{p}{n-p-1}$$
+
+We can use adjusted R-squared to compare models with different numbers of predictors. This is an important tool for deciding which predictors to include in a model, and which to exclude. 
+
+#### **Residual Analysis**
+
+To check the validity of the Gauss-Markov assumptions in simple linear regression, we create a residual plot by plotting the residuals for each training observation against the predictors. For multiple regression, we have many predictors, which means that a similar plot could be very high-dimensional and would thus not be feasible to use. Fortunately, we can apply a similar analysis by plotting the residuals against the fitted values for each observation in the training set. For simple linear regression, this approach produces a plot that is identical to our standard resisual plot, example that the horizontal axis is on a different scale. 
+
+
+### **Example: NYC Restaurants**
+
+In this example, we will be exploring the "New York City Restaurant" dataset, which is stored in the file `nyc.txt`. This tab-separated text file contains information for 168 Italian restaurants in New York City. The dataset contains six variables for each restaurant: 
+
+<center>
+Variable | Description
+-----|----------------------------------------------
+**`Price`** | The average price, in USD, for a meal at the restaurant (including one drink and a tip).
+**`Food`** | The average customer rating of the food, on a scale from 1 to 30. 
+**`Decor`** | The average customer rating of the decor, on a scale from 1 to 30. 
+**`Service`** | The average cusstomer rating of the service, on a scale from 1 to 30.  
+**`Wait`** | The average wait time, in minutes, on a Saturday evening. 
+**`East`** | A binary variable. Equals 1 if the restaurant is east of 5th Avenue, and 0 otherwise. 
+</center>
+
+#### **Load Data**
+
+We begin by loading the data into a data frame using the `read.table()` function. 
+
+```{r}
+df <- read.table("data/nyc.txt", sep="\t", header = TRUE)
+summary(df)
+```
+
+
+#### **Pairs Plot**
+
+We will create a pairs plot of the 5 numerical variables. 
+
+```{r}
+pairs(df[1:5])
+```
+
+#### **Box Plot**
+
+In order to explore the relationship between the categorical (factor) predictor `East` and the response `Price`, we will use the two variables to create a box plot. 
+
+```{r}
+plot(Price ~ as.factor(East), df)
+```
+
+
+
+#### **Full Model**
+
+Our goal is to create a regression model with price as the response and some combination of the other five variables as predictors. We will begin with the "full" model that uses all five available predictors. Our fitted model will have the following form:
+
+$$\hat {Price} = \hat\beta_0 + \hat\beta_1\cdot Food + \hat\beta_2\cdot Decor + \hat\beta_3\cdot Service + \hat\beta_4\cdot Wait + \hat\beta_5\cdot East$$
+
+```{r}
+mod1 <- lm(Price ~ Food + Decor + Service + Wait + East, df)
+#mod1 <- lm(Price ~ ., df)
+summary(mod1)
+```
+
+##### **R-Squared and Adjusted R-Squared**
+
+Note that this model has an R-squared value of $r^2 = 0.6316$ and an adjusted R-squared value of $r^2_{adj} = 0.6202$. We will refer back to these values in a moment. 
+
+##### **Coefficient Estimates**
+
+The coefficient estimates $\hat\beta_0, ..., \hat\beta_5$ are shown in the first column of the section labeled "Coefficients". We can use these to see that the fitted model is given by:
+
+$$\hat {Price} = -25.168 + 1.554\cdot Food + 1.916\cdot Decor - 0.046\cdot Service + 0.068\cdot Wait + 2.046 \cdot East$$
+
+Notice that some of the coefficients in this model are very small. That is not a huge concern, in and of itself. What we want to know is if any of the coefficients are so small that we cannot say that they are non-zero with a reasonably high degree of certainty. 
+
+##### **F-Test**
+
+We can see from the summary that the F-test resulted in a very low p-value. This means that there is strong support for rejecting the null hypothesis 
+
+$$H_0 : \beta_1 = \beta_2 = ... = \beta_p = 0$$ 
+
+in favor of the alternative hypothesis 
+
+$$H_A : \text{There is at least one }\beta_i \neq 0$$ 
+
+With this in mind, we move on to consider the t-tests. 
+
+##### **t-Tests**
+
+Assume that we have opted to use a significance level of $\alpha = 0.05$. Then we see that the results of the t-tests for the intercept, `Food`, `Decor`, and `East` are statistically significant, while the results of the tests for `Service` and `Wait` are NOT statistically significant. We can be quite confident that the true values of $\beta_0$, $\beta_1$, and $\beta_2$ are non-zero, and relatively confident that the value of $\beta_5$ is non-zero. We cannot say with a large degree of certainty that the true values of the parameters $\beta_3$ and $\beta_4$ are non-zero. 
+
+If we are not confident that $\beta_3$ and $\beta_4$ are non-zero, then we are not confident that `Service` and `Wait` have an effect on the price. We should consider removing these from the model. 
+
+
+#### **Create a Smaller Model**
+
+Since the t-tests for the coefficients of `Service` and `Wait` were not statistically significant, we will remove those from the model. 
+
+```{r}
+mod2 <- lm(Price ~ Food + Decor + East, df)
+summary(mod2)
+```
+
+This produces the fitted model: 
+
+$$\hat {Price} = -24.027 + 1.536\cdot Food + 1.909\cdot Decor + 2.067 \cdot East$$
+
+Notice that the t-Tests for all three parameter estimates result in statistically significant p-values. Removing ``wait` and `Service` and `Wait` from the model resulted in a slightly decreased R-squared value, but a slightly increased adjusted R-squared. 
+
+#### **Residual Standard Error**
+ 
+We see that in our second model, we have a residual standard error of $s = 5.72$. Let's compare that with the standard deviation of our response variable:
+
+```{r}
+sd(df$Price)
+```
+
+#### **Residual Analysis**
+
+We will now analyze the residuals from our second model to see if they support the Gauss-Markov assumptions. 
+
+```{r}
+res <- mod2$residuals
+
+plot(res ~ mod2$fitted.values, pch=21, col="black", bg="salmon",
+     xlab="Fitted Value", ylab="Residuals", main="Residual Plot")
+
+abline(h=0, col="darkred", lwd=2)
+```
+
+To test normality, we will conduct a Shapiro-Wilks hypothesis test of the form:
+
+$$H_0 : \text{The residuals are normally distributed.}$$ 
+
+$$H_A : \text{The residuals are not normally distributed.}$$ 
+
+We will use a significance level of $\alpha = 0.05$. 
+
+```{r}
+shapiro.test(res)
+```
+
+The p-value of 0.09733 is relatively low, but not signifance for our selected value of $\alpha$. While there does seem to be some evidence that the residuals are not normally distributed, it is not exceptionally strong. 
+
+To further our analysis, we will create a histogram and QQ-plot of the residuals. 
+
+
+```{r}
+par(mfrow=c(1,2))
+hist(res, col='orchid', breaks=10)
+qqnorm(res)
+qqline(res)
+par(mfrow=c(1,1))
+```
+
+There seems to be evidence that the Gauss-Markov assumptions hold true. 
+
+#### **Generating Predictions**
+
+We will now use our final fitted model to generate predictions for three NYC restuarants with the following characteristics:
+
+1. `Food = 21`, `Decor = 25`, `Service = 18`, `Wait = 35`, `East = 1`
+2. `Food = 24`, `Decor = 13`, `Service = 23`, `Wait = 16`, `East = 0`
+3. `Food = 18`, `Decor = 16`, `Service = 27`, `Wait = 27`, `East = 1` 
+
+```{r}
+nd <- data.frame(Food = c(21, 24, 18), Decor = c(25, 13, 16), East = c(1, 0, 1))
+predict(mod2, newdata = nd, interval = "prediction", level = 0.99)
+```
+

@@ -1,0 +1,334 @@
+---
+title: "1 - Training Regression Models"
+author: "Kamal Chouhbi"
+output:
+  html_notebook:
+    theme: simplex
+    toc: true
+    toc_depth: 4
+---
+
+### **Creating A Regression Model** 
+
+We are now going to provide an overview for how we go about fitting a regression model to a supplied training set of observations. Before we discuss the process for training a model, we need to introduce methods for scoring such models. 
+
+#### **Scoring a Model with MSE and SSE**
+
+Suppose that the variables $X$ and $Y$ are related according to a population model of the form $Y = f(X) + \varepsilon$, where $f$ and the distribution of $\varepsilon$ are unknown to us. We are provided with a training set of `n` paired observations of the form $(x_i, y_i)$. Assume that a model $\hat{f}$ has been proposed as an estimate for $f$. We can use the training data to score the model provided by $\hat{f}$ by calculating either of two scores called the **Mean Squared Error (MSE)** and the **Sum of Squared Errors (SSE)**. The process for calculating these scores is as follows:
+
+1. For each training observation $(x_i, y_i)$, calculate the **fitted value**: $\hat{y}_i = \hat{f}(x_i)$. This quantity represents the predicted value of $Y$ given $X=x_i$, according to our model. 
+2. For each training observation, calculate the error in the model's prediction: $\hat{\varepsilon}_i = y_i - \hat{y}_i$. 
+3. Calculate the **training MSE** and **training SSE** using the following formulas:
+
+$$SSE = \sum\limits_{i=1}^n \hat \varepsilon_i^2 \hspace{4 em} MSE = \frac{1}{n}\sum\limits_{i=1}^n \hat \varepsilon_i^2 \hspace{2 em}$$
+
+We generally prefer models with lower SSE and MSE scores. Note that if we have two models, Model A and Model B, and if $SSE_A < SSE_B$, then it will also be true that $MSE_A < MSE_B$. In other words, these two metrics will always agree on the better of two models. 
+ 
+ 
+#### **Fitting a Regresion Model**
+
+The process for finding a fitted model $\hat{f}$, given a training set of `n` paired observations $(x_i, y_i)$, can be summarized as follows: 
+
+
+1. Determine a class of models that $\hat{f}$ will be selected from. This collection of models is called the **hypothesis space** for the training process. The decision as to what to use as the hypothesis class might be motivated by a graphical analysis, or by specific domain knowledge. In other cases, we will simply try out many different hypothesis spaces and see what works best. 
+
+2. Select the model from the hypothesis space that best fits the training data according to either **Mean Squared Error (MSE)** or the **Sum of Squared Errors (SSE)**. This is our fitted model. 
+
+The process of searching through the hypothesis space to find the best model in that class of functions is typically performed by statistical software such as R. 
+
+#### **Example: Finding a Quadratic Fit**
+
+Assume that we are provided with a training set consisting of 20 paired observations $(x_i, y_i)$. The data is stored in vectors named `x` and `y`. We plot the data below. 
+```{r, echo=FALSE}
+set.seed(4)
+
+n <- 20
+x <- runif(n, 0, 4)
+y <- 4 - 2 * x + x**2 + rnorm(n, 0, 2)
+```
+
+
+```{r}
+plot(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4,
+     xlim=c(0,4), ylim=c(0,16), xlab="X", ylab="Y", 
+     main="Training Data")
+```
+The scatter plot seems to suggest that there is a "curved" relation between the variables $X$ and $Y$. Motivated by that observation, we decide to consider quadratic fits for this data. In other words, we are going to select as our hypothesis space all functions of the form: $\hat{f}(X) = b_0 + b_1 X + b_2 X^2$. Two such models are provided below. 
+
+* $\hat{f}_1(X) = 6 - 2.5 X + X^2$
+* $\hat{f}_2(X) = 4 - 1.5 X + X^2$
+
+The figure below shows the graphs of these two functions superimposed on the training data. Take a moment to inspect these to decide which model you think provides a better fit. 
+
+```{r, echo=FALSE}
+x_curve <- seq(-1, 5, by=0.1)
+y_curve_1 <- 6 - 2.5 * x_curve + x_curve**2
+y_curve_2 <- 4 - 1.5 * x_curve + x_curve**2
+
+par(mfrow=c(1,2))
+
+plot(y_curve_1 ~ x_curve, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     xlab="X", ylab="Y", main="Model 1")
+lines(y_curve_1 ~ x_curve, lwd=2)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+plot(y_curve_2 ~ x_curve, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     xlab="X", ylab="Y", main="Model 2")
+lines(y_curve_2 ~ x_curve, lwd=2)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+par(mfrow=c(1,1))
+```
+
+We can assess the quality of fit for the two models by calculating either SSE or MSE. We will use R to calculate SSE for both of the models. 
+
+```{r}
+pred_1 <- 6 - 2.5 * x + x^2
+error_1 <- y - pred_1
+sse_1 <- sum(error_1^2)
+sse_1
+```
+
+```{r}
+pred_2 <- 4 - 1.5 * x + x^2
+error_2 <- y - pred_2
+sse_2 <- sum(error_2^2)
+sse_2
+```
+
+Of the two models, Model 2 has the lower SSE, so it is our preferred model. However, there is no reason to assume yet that is the best possible quadratic model. In fact, if we rely on R to search the hypothesis space of all quadratic models, we find that the best such model is given by the function: 
+
+$$\hat{f}(X) = 3.96 - X + 0.8 X^2$$
+
+We calculate the SSE for the optimal quadratic model as follows:
+
+```{r}
+pred_opt <- 3.96 - x + 0.8 * x^2
+error_opt <- y - pred_opt
+sse_opt <- sum(error_opt^2)
+sse_opt
+```
+
+### **Model Selection**
+
+We will often want to consider more than one class of model when performing a supervised learning task. When doing so, we will end up with multiple models that have been fit to the training data. In particular, we will have one fitted model for each hypothesis class under consideration. In this section, we will discuss methods to select a model from a set of fitted models. 
+
+#### **Overfitting and Underfitting**
+
+The figure below displays plots for three models that have been fit to the training data that we have been considering in this lesson and in the previous one. Model 1 is the best-fitting linear model. Model 2 is the quadratic model that provides the best fit for the data. Model 3 is the optimal degree 9 polynomial model. 
+
+Each of the three models considered is the best-in-class for the hypothesis space under consideration. It is important to note that in this scenario, the hypothesis spaces are nested. The hypothesis space of all degree 9 polynomials contains the space of quadratic polynomials, which in turn contains the space of all linear functions. As a result, we are guaranteed that the Model 3 will have the lowest MSE and SSE of all three models, since it is has the best score of ALL degree 9 polynomials. Does that mean that it is the best model of the three?
+
+A visual inspection of the plots would suggest that Model 2 provides the best fit for the data. 
+
+Model 1 is too simple. This linear model fails to capture the apparently nonlinear relationship in the training data. This is a case of  **underfitting**, where the model being considered in too simple to capture the true nature of the relationship. 
+
+Model 3, on the other hand, seems unnecessarily complicated. The curve passes very near each of the training points, but indicates that there are complexities in the relationship that probably don't actually exist. This is a classic case of **overfitting**, where the model being considered is too flexible, and trains itself to the noise in the data. An overfit model will perform unreasonably well on the training data, but will fail to generalize well to new, unseen observations. 
+
+
+```{r, fig.height=3, fig.width=8, echo=FALSE}
+set.seed(4)
+
+n <- 20
+x <- runif(n, 0, 4)
+y <- 4 - 2 * x + x**2 + rnorm(n, 0, 2)
+
+mod1 <- lm(y ~ x)
+mod2 <- lm(y ~ x + I(x^2))
+mod3 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4) + I(x^5) + 
+             I(x^6) + I(x^7) + I(x^8) + I(x^9))
+
+fitted1 <- predict(mod1, data.frame(x=x_curve))
+fitted2 <- predict(mod2, data.frame(x=x_curve))
+fitted3 <- predict(mod3, data.frame(x=x_curve))
+
+
+par(mfrow=c(1,3))
+
+plot(y ~ x, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 1 (Linear)")
+lines(fitted1 ~ x_curve, col="black", lwd=2.5)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+plot(y ~ x, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 2 (Quadratic)")
+lines(fitted2 ~ x_curve, col="black", lwd=2.5)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+plot(y ~ x, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 3 (Degree 9)")
+lines(fitted3 ~ x_curve, col="black", lwd=2.5)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+
+par(mfrow=c(1,1))
+
+```
+
+
+#### **Train, Test, and Validation Sets**
+
+We train our models by selecting ones that perform well on the training data. But we are ultimately interested in finding models that will generalize well to new observations. When we put our model into production, it is new observations for which it will be used to make predictions. To obtain an estimate of how well our models will perform when encountering new, previously unseen observations, we will generally remove some portion of the data available to us at training. We do not allow the models to train on this holdout data. The observations in the holdout set are unseen by the fitted models, and can be used to measure how well the model will generalize to new data. 
+
+In particular, we typically split our labeled data into three sets: the **training set**, the **validation set**, and the **test set**. The purpose of these three sets will be explained below. 
+
+
+* The **training set** is used to train the model. We will provide the training set to a machine learning algorithm as input, and the algorithm will search the specified hypothesis space to find the best-in-class model, as measured by training MSE/SSE.
+
+* The **validation set** is used to compare different fitted models. When we are considering multiple hypothesis spaces for a supervised learning problem, we can compare the resulting fitted models using the validation set, which was not seen by any of the models during the fitting stage. We typically select the model with the lowest validation MSE/SSE as our final model. 
+
+* The **test set** is used to assess the performance of our final model. Using the validation set to select a fitted model introduces the possibility of selecting a model that overfits to the validation set. As a result, the validation MSE/SSE might not be a reliable measure of model performance. We calculate the test MSE/SSE to provide the final estimate of the selected model's performance. Note that the test set is only used once, at the end of the model building process. It is only used after we have selected our final model, and does not influence any of our model-building decisions. 
+
+#### **Example: Performing Model Selection**
+
+Let's return to our previous example. Assume that in addition to the 20 training observations that we have been considering (shown in green), we also have access to 10 validation observations (shown in blue), as well as 10 test observations (shown in red). A scatter plot including all three sets is shown below. 
+
+```{r, echo=FALSE}
+x_train <- x
+y_train <- y
+
+set.seed(3)
+x_val <- runif(10, 0, 4)
+y_val <- 4 - 2 * x_val + x_val^2 + rnorm(10, 0, 2)
+
+set.seed(2)
+x_test <- runif(10, 0, 4)
+y_test <- 4 - 2 * x_test + x_test^2 + rnorm(10, 0, 2)
+
+
+plot(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4,
+     xlim=c(0,4), ylim=c(0,16), xlab="X", ylab="Y", 
+     main="Training, Validation, and Testing Data")
+
+points(y_val ~ x_val, pch=21, col="black", bg="dodgerblue", cex=1.4)
+points(y_test ~ x_test, pch=21, col="black", bg="salmon", cex=1.4)
+```
+
+Let's start by calculating the training MSE for each of the three models. As we have already observed, we expect that Model 3 will have the lowest training MSE. 
+
+```{r, fig.height=3, fig.width=8, echo=FALSE}
+mod1 <- lm(y ~ x)
+mod2 <- lm(y ~ x + I(x^2))
+mod3 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4) + I(x^5) + 
+             I(x^6) + I(x^7) + I(x^8) + I(x^9))
+
+fitted1 <- predict(mod1, data.frame(x=x_curve))
+fitted2 <- predict(mod2, data.frame(x=x_curve))
+fitted3 <- predict(mod3, data.frame(x=x_curve))
+
+
+par(mfrow=c(1,3))
+
+plot(y ~ x, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 1")
+lines(fitted1 ~ x_curve, col="black", lwd=2.5)
+segments(x_train, y_train, x_train, mod1$fitted.values, col="firebrick3", lwd=2)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+
+
+plot(y ~ x, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 2")
+lines(fitted2 ~ x_curve, col="black", lwd=2.5)
+segments(x_train, y_train, x_train, mod2$fitted.values, col="firebrick3", lwd=2)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+plot(y ~ x, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 3")
+lines(fitted3 ~ x_curve, col="black", lwd=2.5)
+segments(x_train, y_train, x_train, mod3$fitted.values, col="firebrick3", lwd=2)
+points(y ~ x, pch=21, col="black", bg="limegreen", cex=1.4)
+
+
+par(mfrow=c(1,1))
+```
+
+```{r, echo=FALSE}
+mse1 <- mean(mod1$residuals^2)
+mse2 <- mean(mod2$residuals^2)
+mse3 <- mean(mod3$residuals^2)
+
+train_mse <- c(mse1, mse2, mse3)
+names(train_mse) <- c("Model 1", "Model 2", "Model 3") 
+train_mse
+```
+
+We have confirmed that Model 3 does, in fact, have the lowest training MSE. However, an analysis of the plots suggests that Model 3 might be overfitting. Let's compare the performance of the models on the validation set. 
+
+```{r, fig.height=3, fig.width=8, echo=FALSE}
+
+
+pred_val1 <- predict(mod1, data.frame(x=x_val))
+pred_val2 <- predict(mod2, data.frame(x=x_val))
+pred_val3 <- predict(mod3, data.frame(x=x_val))
+
+
+par(mfrow=c(1,3))
+
+plot(y_val ~ x_val, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 1")
+lines(fitted1 ~ x_curve, col="black", lwd=2.5)
+segments(x_val, y_val, x_val, pred_val1, col="firebrick3", lwd=2)
+points(y_val ~ x_val, pch=21, col="black", bg="dodgerblue", cex=1.4)
+
+
+
+plot(y_val ~ x_val, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 2")
+lines(fitted2 ~ x_curve, col="black", lwd=2.5)
+segments(x_val, y_val, x_val, pred_val2, col="firebrick3", lwd=2)
+points(y_val ~ x_val, pch=21, col="black", bg="dodgerblue", cex=1.4)
+
+plot(y_val ~ x_val, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 3")
+lines(fitted3 ~ x_curve, col="black", lwd=2.5)
+segments(x_val, y_val, x_val, pred_val3, col="firebrick3", lwd=2)
+points(y_val ~ x_val, pch=21, col="black", bg="dodgerblue", cex=1.4)
+
+
+par(mfrow=c(1,1))
+```
+
+```{r, echo=FALSE}
+mse1 <- mean((y_val - pred_val1)^2 )
+mse2 <- mean((y_val - pred_val2)^2 )
+mse3 <- mean((y_val - pred_val3)^2 )
+
+val_mse <- c(mse1, mse2, mse3)
+names(val_mse) <- c("Model 1", "Model 2", "Model 3") 
+val_mse
+```
+
+We see that Model 2 has the lowest validation MSE. We will select this to be our final model. We will now calculate the test MSE for this model alone. 
+
+```{r, echo=FALSE}
+pred_test2 <- predict(mod2, data.frame(x=x_test))
+
+plot(y_test ~ x_test, pch=".", xlim=c(0,4), ylim=c(0,15), 
+     main="Model 2")
+lines(fitted2 ~ x_curve, col="black", lwd=2.5)
+segments(x_test, y_test, x_test, pred_test2, col="firebrick3", lwd=2)
+points(y_test ~ x_test, pch=21, col="black", bg="salmon", cex=1.4)
+```
+
+```{r, echo=FALSE}
+test_mse2 <- mean((y_test - pred_test2)^2 )
+
+cat("Test MSE:", test_mse2)
+```
+
+For the purposes of summary, we will now show all of the calculated SSE scores together. 
+
+```{r, echo=FALSE}
+test_mse <- c(NA, test_mse2, NA)
+rbind(train_mse, val_mse, test_mse)
+```
+
+### **Training and Valudation MSE**
+
+Notice that as we considered moved from less flexible fitting methods (such as considering only linear model) to more flexible fitting methods (such as considering degree-9 polynomials), we saw two things occur:
+
+* As flexibility increased, the training MSE decreased. 
+* As flexibility increased, validation MSE first decreased, and then increased. 
+
+It is very typical to see this sort of behavior when working with several regression methods with varying degrees of flexibility. The following figures illustrate typical relationships between model flexibility and both training and validation MSE. In each of the examples shown, the black curve in the left plot represents a known population model, while the other curves are models that have been fit to the sample data that is shown. On the right side, the grey curve represents the training MSE as a function of flexibility, while the red curve represents validation MSE. 

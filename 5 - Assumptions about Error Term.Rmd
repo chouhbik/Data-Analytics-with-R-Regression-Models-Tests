@@ -1,0 +1,280 @@
+---
+title: "5 - Assumptions about Error Term"
+author: "Kamal Chouhbi"
+output:
+  html_notebook:
+    theme: simplex
+    toc: true
+    toc_depth: 4
+---
+
+### **Overview**
+
+In general, if we would like to quantify how certain we are in predictions made by our model, we need to make some assumptions about the distribution of $\varepsilon$.
+
+### **Gauss-Markov Assumptions**
+
+When working with a linear regression model, we will make the following assumptions, called the Gauss-Markov Assumptions:
+
+1. The relationship between $X$ and $Y$ is determined by a linear model of the form $Y = \beta_0 + \beta_1 X + \varepsilon$. 
+
+2. Seperate observations of $\varepsilon$ are independent from one another. 
+
+3. The error term $\varepsilon$ is normally distributed with a mean of 0 and standard deviation $\sigma$. That is, $\varepsilon \sim N(0,\sigma^2)$. 
+
+4. The error term $\varepsilon$ is independent from $X$. In particular, the variance $\sigma^2$ does not depend on $X$.
+
+The condition described in item four above requires that the variance of $\varepsilon$ is constant over all values of $X$. This condition is referred to a **homoskedasticity**. If the variance of $\varepsilon$ varies over $X$, then we say that the error is **heteroskedastic**. 
+
+
+### **Residual Plots**
+
+Before using our model for any tasks that depend on the Gauss-Markov assumptions, we should test our model to get a sense as to the validity of these assumptions. We don't have access to the original error terms associated with each of our observations, but we do have access to our residuals $\hat\varepsilon_1, \hat\varepsilon_2, ..., \hat\varepsilon_n$, which can be used to approximate the distribution of $\varepsilon$. 
+
+One useful tool for conducting residual analysis is a **residual plot**. This is simply a plot of the residuals against the $X$ values of our observations. 
+
+In the code chunk below, we simulate a dataset and then create a regression model based on this dataset. 
+
+```{r}
+set.seed(1)
+x <- runif(100, 0, 20)
+y <- 6 + 1.4 * x + rnorm(100,0,2)
+mod <- lm(y ~ x)
+
+summary(mod)
+```
+
+The plot below displays a scatter plot of $Y$ against $X$, as well as a plot of the OLS regression line. 
+
+```{r, fig.width=6}
+plot(y ~ x, pch=21, bg="cyan", col="black", cex=1.25)
+abline(mod$coefficients, col="maroon", lwd=2)
+```
+
+The following **residual plot** is formed by plotting the residuals against the associated $X$ values. 
+
+```{r, fig.width=6}
+res <- mod$residuals
+plot(res ~ x, pch=21, bg="cyan", col="black", cex=1.25)
+abline(h=0, col="maroon", lwd=2)
+```
+
+
+### **Violations of the Gauss-Markov Assumptions**
+
+To help you identify situations in which the Gauss-Markov assumptions appear to be valid, we will now demonstrate several examples in which these assumptions are violated. 
+
+
+#### **Example 1**
+
+```{r, echo=FALSE, fig.width=6}
+set.seed(2)
+x1 <- runif(100, 0, 20)
+y1 <- 0.6 * x1^2 + 3 * x1 + 5 + rnorm(100,0,20)
+mod1 <- lm(y1 ~ x1)
+
+par(mfrow=c(1,2))
+plot(y1 ~ x1, pch=21, bg="cyan", col="black", cex=1, 
+     main="Scatter Plot", xlab="X", ylab="Y")
+abline(mod1$coefficients, col="darkred", lwd=2)
+
+plot(mod1$residuals ~ x1, pch=21, bg="cyan", col="black", cex=1,
+     main="Residual Plot", xlab="X", ylab="residuals")
+abline(h=0, col="darkred", lwd=2)
+par(mfrow=c(1,1))
+```
+
+
+There is a noticable "trend" in the residuals for this dataset. This results in assumptions 1, 2 and 4 being violated. 
+
+#### **Example 2**
+
+
+```{r, echo=FALSE, fig.width=6}
+set.seed(1)
+x2 <- runif(100, 0, 20)
+y2 <- 1.6 * x2 + 5 + rnorm(100,0,0.5)*(x2 + 1)
+mod2 <- lm(y2 ~ x2)
+
+par(mfrow=c(1,2))
+plot(y2 ~ x2, pch=21, bg="cyan", col="black", cex=1, 
+     main="Scatter Plot", xlab="X", ylab="Y")
+abline(mod2$coefficients, col="darkred", lwd=2)
+
+plot(mod2$residuals ~ x2, pch=21, bg="cyan", col="black", cex=1,
+     main="Residual Plot", xlab="X", ylab="residuals")
+abline(h=0, col="darkred", lwd=2)
+par(mfrow=c(1,1))
+```
+
+
+
+Notice that the residuals tend to be larger for large values of $X$, causing observations tend to "fan out" away from the regression line. In other words, the errors are **heteroskedastic**, violating assumption 4. 
+
+
+#### **Example 3**
+
+```{r, echo=FALSE, fig.width=6}
+set.seed(1)
+x3 <- 1:100
+w <- rnorm(100,0,0.25)
+y3 <- cumsum(w) + 0.05*x3
+
+mod3 <- lm(y3 ~ x3)
+
+par(mfrow=c(1,2))
+plot(y3 ~ x3, pch=21, bg="cyan", col="black", cex=1, 
+     main="Scatter Plot", xlab="X", ylab="Y")
+abline(mod3$coefficients, col="darkred", lwd=2)
+
+plot(mod3$residuals ~ x3, pch=21, bg="cyan", col="black", cex=1,
+     main="Residual Plot", xlab="X", ylab="residuals")
+abline(h=0, col="darkred", lwd=2)
+par(mfrow=c(1,1))
+```
+
+In this example, we see that the data does seem to exhibit a mostly linear relationshiop. But there are intervals in which the residuals are mostly positive, or mostly negative. This indicates that the residuals are correlated with $X$, and that independent observations of $e$ are not independent of each other. This violates assumptions 2 and 4. 
+
+
+#### **Example 4**
+
+```{r, echo=FALSE, fig.width=8}
+set.seed(1)
+x4 <- runif(100, 0, 20)
+y4 <- 0.6 * x4 + 5 + rgamma(100,1,1)
+mod4 <- lm(y4 ~ x4)
+
+mod4 <- lm(y4 ~ x4)
+
+par(mfrow=c(1,2))
+plot(y4 ~ x4, pch=21, bg="cyan", col="black", cex=1, 
+     main="Scatter Plot", xlab="X", ylab="Y")
+abline(mod4$coefficients, col="darkred", lwd=2)
+
+plot(mod4$residuals ~ x3, pch=21, bg="cyan", col="black", cex=1,
+     main="Residual Plot", xlab="X", ylab="residuals")
+abline(h=0, col="darkred", lwd=2)
+par(mfrow=c(1,1))
+```
+
+```{r}
+hist(mod4$residuals, col="orchid", main="Histogram of Residuals", xlab="Residuals")
+```
+
+In this example, it appears that the residuals are not normally distributed, violating assumption 3. 
+
+
+### **Q-Q Plots**
+
+A useful tool for testing the normality assumption is provided by the Q-Q Plot (or Quantile-Quantile Plot). The Q-Q plot is constructed by plotting the emperical quantiles of a sample against the theoretical quantiles from a distribution that we might suspect the sample was drawn from. This will be explained in more detail in class. 
+
+If the sample was drawn from the hypothesized distribution, then the points in the Q-Q Plot should fall near a line. We conclude this lesson by showing Q-Q plots for several distributions. In each case, we are testing the assumption that the sample was drawn from a normal distribution. 
+
+
+#### **Example 1: Normal Distribution**
+
+```{r}
+set.seed(1)
+r1 <- rnorm(500, 0, 2)
+
+par(mfrow=c(1,2))
+
+hist(r1, col="orchid")
+
+qqnorm(r1)
+qqline(r1)
+par(mfrow=c(1,1))
+```
+
+
+```{r}
+shapiro.test(r1)
+```
+
+
+#### **Example 2: Right-Skewed Distribution**
+
+```{r}
+set.seed(1)
+r2 <- rgamma(500, 4, 1)
+
+par(mfrow=c(1,2))
+
+hist(r2, col="orchid")
+
+qqnorm(r2)
+qqline(r2)
+par(mfrow=c(1,1))
+```
+
+
+```{r}
+shapiro.test(r2)
+```
+
+#### **Example 3: Left-Skewed Distribution**
+
+```{r}
+set.seed(1)
+r3 <- 20 - rgamma(500, 4, 1)
+
+par(mfrow=c(1,2))
+
+hist(r3, col="orchid")
+
+qqnorm(r3)
+qqline(r3)
+par(mfrow=c(1,1))
+```
+
+
+```{r}
+shapiro.test(r3)
+```
+
+#### **Example 4: Heavy-Tailed Distribution**
+
+```{r}
+set.seed(1)
+r4 <- 4 + rt(500, 5)
+
+par(mfrow=c(1,2))
+
+hist(r4, col="orchid")
+
+qqnorm(r4)
+qqline(r4)
+par(mfrow=c(1,1))
+```
+
+
+```{r}
+shapiro.test(r4)
+```
+
+#### **Example 5: Light-Tailed Distribution**
+
+
+```{r}
+set.seed(250)
+r5 <- runif(500, 4,8)
+
+par(mfrow=c(1,2))
+
+hist(r5, col="orchid")
+
+qqnorm(r5)
+qqline(r5)
+par(mfrow=c(1,1))
+```
+
+
+```{r}
+shapiro.test(r5)
+```
+
+
+
+
+
+
